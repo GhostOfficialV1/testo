@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic Key Generator</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #18181b; color: #fff; padding: 30px; }
+        .container { max-width: 950px; margin: auto; background: #27272a; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h2, h3 { color: #3b82f6; }
+        select, button { padding: 10px 15px; margin-top: 10px; background: #3f3f46; color: #fff; border: 1px solid #52525b; border-radius: 6px; font-size: 14px; }
+        button { background: #2563eb; cursor: pointer; border: none; font-weight: bold; }
+        button:hover { background: #1d4ed8; }
+        table { width: 100%; margin-top: 25px; border-collapse: collapse; background: #1f1f23; border-radius: 6px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #27272a; word-break: break-all; }
+        th { background: #3f3f46; color: #9ca3af; }
+        .success { background: #166534; padding: 10px; border-radius: 6px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Logic Key Panel (GitHub Frontend)</h2>
+    
+    <div id="msg" class="success" style="display:none;"></div>
+
+    <form id="keyForm">
+        <label for="duration"><strong>Dauer für den neuen Key auswählen:</strong></label><br>
+        <select name="duration" id="duration">
+            <option value="1 minute">1 Minute</option>
+            <option value="5 minutes">5 Minuten</option>
+            <option value="30 minutes">30 Minuten</option>
+            <option value="1 hour">1 Stunde</option>
+            <option value="1 day">1 Tag</option>
+            <option value="1 week">1 Woche</option>
+            <option value="1 month">1 Monat (31 Tage)</option>
+            <option value="lifetime">Lifetime</option>
+        </select>
+        <br><br>
+        <button type="button" onclick="generateKey()">Key generieren (32 Zeichen)</button>
+    </form>
+
+    <h3>Übersicht aller Keys</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Key (32 Zeichen)</th>
+                <th>Dauer</th>
+                <th>HWID Status</th>
+                <th>Aktion</th>
+            </tr>
+        </thead>
+        <tbody id="keyList">
+            <!-- Keys werden hier geladen -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Funktion zum Generieren eines zufälligen 32-stelligen Schlüssels (Buchstaben + Zahlen)
+    function generateRandomKey(length = 32) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    function generateKey() {
+        const duration = document.getElementById('duration').value;
+        const newKey = generateRandomKey(32);
+        
+        let keys = JSON.parse(localStorage.getItem('logic_keys') || '[]');
+        keys.unshift({ key: newKey, duration: duration, hwid: "", expires: 0 });
+        localStorage.setItem('logic_keys', JSON.stringify(keys));
+
+        document.getElementById('msg').style.display = 'block';
+        document.getElementById('msg').innerText = "Key erfolgreich erstellt: " + newKey;
+        loadKeys();
+    }
+
+    function loadKeys() {
+        let keys = JSON.parse(localStorage.getItem('logic_keys') || '[]');
+        let tbody = document.getElementById('keyList');
+        tbody.innerHTML = "";
+
+        keys.forEach((k, index) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><code>${k.key}</code></td>
+                    <td>${k.duration}</td>
+                    <td>${k.hwid ? '<span style="color:#f87171;">Aktiviert (' + k.hwid + ')</span>' : '<span style="color:#4ade80;">Unbenutzt</span>'}</td>
+                    <td><button onclick="deleteKey(${index})" style="background:#dc2626; padding:5px 10px; margin:0;">Löschen</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function deleteKey(index) {
+        let keys = JSON.parse(localStorage.getItem('logic_keys') || '[]');
+        keys.splice(index, 1);
+        localStorage.setItem('logic_keys', JSON.stringify(keys));
+        loadKeys();
+    }
+
+    loadKeys();
+</script>
+</body>
+</html>
